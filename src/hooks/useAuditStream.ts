@@ -28,6 +28,10 @@ export interface AuditState {
   summary: AuditSummary | null;
   errorMessage: string | null;
   events: AuditEvent[];
+  // UI state
+  expandedSections: StageName[];
+  savingsVisible: boolean;
+  documentsReady: boolean;
 }
 
 const initialState: AuditState = {
@@ -49,12 +53,16 @@ const initialState: AuditState = {
   summary: null,
   errorMessage: null,
   events: [],
+  expandedSections: [],
+  savingsVisible: false,
+  documentsReady: false,
 };
 
 type Action =
   | { type: "reset" }
   | { type: "start" }
-  | { type: "event"; event: AuditEvent };
+  | { type: "event"; event: AuditEvent }
+  | { type: "toggle_section"; section: StageName };
 
 function reducer(state: AuditState, action: Action): AuditState {
   switch (action.type) {
@@ -62,13 +70,23 @@ function reducer(state: AuditState, action: Action): AuditState {
       return initialState;
     case "start":
       return { ...initialState, status: "streaming" };
+    case "toggle_section": {
+      const s = action.section;
+      const expanded = state.expandedSections.includes(s)
+        ? state.expandedSections.filter(x => x !== s)
+        : [...state.expandedSections, s];
+      return { ...state, expandedSections: expanded };
+    }
     case "event": {
       const e = action.event;
       const events = [...state.events, e];
 
       switch (e.type) {
-        case "stage_start":
-          return { ...state, events, currentStage: e.stage, stageTitle: e.title };
+        case "stage_start": {
+          // Expand new section, collapse previous
+          const expanded = [e.stage];
+          return { ...state, events, currentStage: e.stage, stageTitle: e.title, expandedSections: expanded };
+        }
         case "stage_complete":
           return { ...state, events };
         case "parse_item":
@@ -84,7 +102,7 @@ function reducer(state: AuditState, action: Action): AuditState {
         case "benchmark_item":
           return { ...state, events, benchmarks: [...state.benchmarks, e.benchmark] };
         case "benchmark_complete":
-          return { ...state, events, benchmarkSummary: e.summary };
+          return { ...state, events, benchmarkSummary: e.summary, savingsVisible: true };
         case "right_found":
           return { ...state, events, protections: [...state.protections, e.protection] };
         case "charity_care_result":
@@ -108,9 +126,12 @@ function reducer(state: AuditState, action: Action): AuditState {
         case "letter_complete":
           return { ...state, events, letters: [...state.letters, e.letter] };
         case "letters_complete":
-          return { ...state, events };
+          return { ...state, events, documentsReady: true };
         case "audit_complete_all":
-          return { ...state, events, status: "complete", summary: e.summary };
+          return {
+            ...state, events, status: "complete", summary: e.summary,
+            expandedSections: ["audit", "benchmark"],
+          };
         case "error":
           return { ...state, events, status: "error", errorMessage: e.message };
         default:
@@ -202,5 +223,9 @@ export function useAuditStream() {
     abortRef.current?.abort();
   }, []);
 
-  return { state, startAudit, reset, stop };
+  const toggleSection = useCallback((section: StageName) => {
+    dispatch({ type: "toggle_section", section });
+  }, []);
+
+  return { state, startAudit, reset, stop, toggleSection };
 }

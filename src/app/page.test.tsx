@@ -3,16 +3,17 @@ import { render, screen, fireEvent } from "@testing-library/react";
 import Home from "./page";
 
 // Mock framer-motion
-jest.mock("framer-motion", () => ({
-  motion: {
-    div: ({ children, ...props }: React.PropsWithChildren<Record<string, unknown>>) => {
-      const { initial, animate, exit, transition, ...rest } = props as Record<string, unknown>;
-      void initial; void animate; void exit; void transition;
-      return <div {...(rest as React.HTMLAttributes<HTMLDivElement>)}>{children}</div>;
-    },
-  },
-  AnimatePresence: ({ children }: React.PropsWithChildren) => <>{children}</>,
-}));
+jest.mock("framer-motion", () => {
+  const proxy = ({ children, ...props }: React.PropsWithChildren<Record<string, unknown>>) => {
+    const { initial, animate, exit, transition, ...rest } = props as Record<string, unknown>;
+    void initial; void animate; void exit; void transition;
+    return <div {...(rest as React.HTMLAttributes<HTMLDivElement>)}>{children}</div>;
+  };
+  return {
+    motion: { div: proxy, span: proxy },
+    AnimatePresence: ({ children }: React.PropsWithChildren) => <>{children}</>,
+  };
+});
 
 global.fetch = jest.fn();
 

@@ -1,36 +1,87 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# BillShredder
+
+AI-powered medical bill auditor that finds billing errors, benchmarks prices, identifies legal protections, and generates dispute letters.
+
+80% of hospital bills contain errors. BillShredder uses Claude to audit every charge and build your case.
+
+## How It Works
+
+1. **Parse** — Extracts line items, CPT codes, and charges from your bill
+2. **Audit** — Finds duplicate charges, upcoding, unbundling, phantom charges
+3. **Benchmark** — Compares prices against Medicare rates and fair market value
+4. **Legal Rights** — Identifies applicable protections (No Surprises Act, 501(r) charity care, state laws, FDCPA)
+5. **Strategy** — Builds a step-by-step negotiation playbook with talking points
+6. **Documents** — Generates ready-to-send dispute and negotiation letters
+
+## Tech Stack
+
+- **Next.js 16** (App Router, Turbopack)
+- **Claude API** — Sonnet 4.5 for parsing/analysis, Opus 4.6 for legal reasoning and letter drafting
+- **Framer Motion** for animations
+- **Tailwind CSS v4** with custom dark theme
+- **Server-Sent Events** for real-time streaming
 
 ## Getting Started
 
-First, run the development server:
+```bash
+npm install
+```
+
+Create a `.env.local` file:
+
+```
+ANTHROPIC_API_KEY=your-key-here
+```
+
+Run the dev server:
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000). No API key? The app falls back to demo mode automatically.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Demo Mode
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Try it without an API key using built-in demo scenarios:
 
-## Learn More
+- **ER Visit** ($47K) — Broken arm with duplicate CT scans & upcoding
+- **Childbirth** ($32K) — Out-of-network balance billing
+- **Collections** ($8.5K) — Urgent care debt with FDCPA violations
 
-To learn more about Next.js, take a look at the following resources:
+Or use URL params: `?demo=er`, `?demo=baby`, `?demo=collections`
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Architecture
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+```
+src/
+├── app/
+│   ├── api/audit/route.ts    # 6-stage SSE streaming pipeline
+│   ├── page.tsx               # Single-column dashboard layout
+│   └── globals.css            # Dark theme, animations
+├── components/
+│   ├── StickyHeader.tsx       # Logo, status, demo toggle
+│   ├── ProgressStepper.tsx    # 6-step visual progress
+│   ├── SavingsHero.tsx        # Bill vs fair value comparison
+│   ├── DocumentCards.tsx      # Generated letter cards
+│   ├── FindingsDashboard.tsx  # Collapsible findings sections
+│   ├── CollapsibleSection.tsx # Reusable collapse/expand
+│   ├── AnimatedNumber.tsx     # Count-up animation
+│   └── ...                    # ErrorsSection, BenchmarkSection, etc.
+├── hooks/
+│   └── useAuditStream.ts     # SSE consumer with reducer state
+└── lib/
+    ├── agent/                 # System prompts and tool definitions
+    ├── types.ts               # Shared TypeScript types
+    └── demo-scripts/          # Pre-scripted demo event streams
+```
 
-## Deploy on Vercel
+## Testing
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+```bash
+npm test
+```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## License
+
+MIT
