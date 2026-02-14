@@ -8,6 +8,7 @@ import { GET_ITEMIZED_BILL_SCRIPT } from "@/lib/call-scripts/get-itemized-bill";
 import { NEGOTIATE_BILL_SCRIPT } from "@/lib/call-scripts/negotiate-bill";
 import JourneyPhaseIndicator from "./JourneyPhaseIndicator";
 import CallCoach from "./CallCoach";
+import LiveNegotiation from "./LiveNegotiation";
 import PhaseTransition from "./PhaseTransition";
 import ProgressStepper from "./ProgressStepper";
 import SavingsHero from "./SavingsHero";
@@ -26,6 +27,8 @@ interface JourneyControllerProps {
   isRealBill: boolean;
   /** called when call1 finishes and we should start the audit */
   onStartAudit: () => void;
+  /** enable live AI vs AI negotiation instead of scripted */
+  liveNegotiation?: boolean;
 }
 
 type TransitionState = "none" | "call1-to-audit" | "audit-to-call2" | "call2-to-results";
@@ -38,11 +41,13 @@ export default function JourneyController({
   speed,
   isRealBill,
   onStartAudit,
+  liveNegotiation = false,
 }: JourneyControllerProps) {
   // For real bills, skip call1 and go straight to audit
   const initialPhase: JourneyPhase = isRealBill ? "audit" : "call1";
   const [phase, setPhase] = useState<JourneyPhase>(initialPhase);
   const [transition, setTransition] = useState<TransitionState>("none");
+  const [negotiatedAmount, setNegotiatedAmount] = useState<number | undefined>(undefined);
 
   const handleCall1Complete = useCallback(() => {
     setTransition("call1-to-audit");
@@ -59,7 +64,8 @@ export default function JourneyController({
     setPhase("call2");
   }, []);
 
-  const handleCall2Complete = useCallback(() => {
+  const handleCall2Complete = useCallback((finalAmount?: number) => {
+    if (finalAmount) setNegotiatedAmount(finalAmount);
     setTransition("call2-to-results");
   }, []);
 
@@ -71,9 +77,38 @@ export default function JourneyController({
   // Auto-transition from audit to call2 when audit completes
   const auditComplete = auditState.status === "complete";
   if (phase === "audit" && auditComplete && transition === "none" && demoMode) {
-    // Use a timeout so we don't setState during render
     setTimeout(() => setTransition("audit-to-call2"), 1500);
   }
+
+  // Build negotiation context from audit state
+  const negotiationContext = {
+    originalBill: auditState.bill?.total_charges || 47283,
+    fairValue: auditState.benchmarkSummary?.total_fair_value || 11258,
+    hospitalName: auditState.bill?.hospital?.name || "City General Hospital",
+    errors: auditState.errors.map(e => ({
+      title: e.title,
+      estimated_overcharge: e.estimated_overcharge,
+      evidence: e.evidence,
+    })),
+    benchmarks: auditState.benchmarks.map(b => ({
+      description: b.description,
+      billed_amount: b.billed_amount,
+      medicare_rate: b.medicare_rate,
+      fair_rate: b.fair_rate,
+      markup_ratio: b.markup_ratio,
+    })),
+    protections: auditState.protections.filter(p => p.applies).map(p => ({
+      name: p.name,
+      description: p.description,
+      action: p.action,
+    })),
+    strategy: auditState.strategySteps.map(s => ({
+      action: s.action,
+      talking_points: s.talking_points,
+      expected_savings: s.expected_savings,
+    })),
+    charityCareEligible: auditState.charityCare?.likely_eligible || false,
+  };
 
   return (
     <div className="flex-1 flex flex-col min-h-0">
@@ -103,7 +138,7 @@ export default function JourneyController({
         {transition === "audit-to-call2" && (
           <PhaseTransition
             key="t2"
-            message="Strategy ready. Time to call."
+            message={liveNegotiation ? "Strategy ready. Launching AI negotiator..." : "Strategy ready. Time to call."}
             duration={2500}
             speed={speed}
             onComplete={handleTransitionToCall2}
@@ -164,7 +199,7 @@ export default function JourneyController({
                   className="w-full py-3 rounded-xl text-sm font-semibold transition-colors"
                   style={{ background: "#D4A574", color: "#0C0C0F" }}
                 >
-                  Continue to Negotiation Call
+                  {liveNegotiation ? "Launch AI Negotiator" : "Continue to Negotiation Call"}
                 </button>
               )}
             </div>
@@ -181,16 +216,36 @@ export default function JourneyController({
                   {" "}charity care eligible
                 </p>
               </div>
-              <CallCoach
-                title="Negotiating Your Bill Down"
-                subtitle="BillShredder coaches you through the negotiation"
-                script={NEGOTIATE_BILL_SCRIPT}
-                onComplete={handleCall2Complete}
-                speed={speed}
-                autoPlay={demoMode}
-                skipLabel="Skip to Results"
-                originalBill={auditState.bill?.total_charges || 47283}
-              />
+
+              {liveNegotiation ? (
+                <LiveNegotiation
+                  title="AI Negotiating Your Bill"
+                  subtitle="Opus vs Opus — watch your AI advocate fight for every dollar"
+                  originalBill={negotiationContext.originalBill}
+                  fairValue={negotiationContext.fairValue}
+                  hospitalName={negotiationContext.hospitalName}
+                  errors={negotiationContext.errors}
+                  benchmarks={negotiationContext.benchmarks}
+                  protections={negotiationContext.protections}
+                  strategy={negotiationContext.strategy}
+                  charityCareEligible={negotiationContext.charityCareEligible}
+                  onComplete={(amount) => handleCall2Complete(amount)}
+                  speed={speed}
+                  demoMode={demoMode}
+                  skipLabel="Skip to Results"
+                />
+              ) : (
+                <CallCoach
+                  title="Negotiating Your Bill Down"
+                  subtitle="BillShredder coaches you through the negotiation"
+                  script={NEGOTIATE_BILL_SCRIPT}
+                  onComplete={() => handleCall2Complete()}
+                  speed={speed}
+                  autoPlay={demoMode}
+                  skipLabel="Skip to Results"
+                  originalBill={auditState.bill?.total_charges || 47283}
+                />
+              )}
             </>
           )}
 
@@ -199,6 +254,7 @@ export default function JourneyController({
               state={auditState}
               expandedSections={expandedSections}
               onToggleSection={onToggleSection}
+              negotiatedAmount={negotiatedAmount}
             />
           )}
         </>

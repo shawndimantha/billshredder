@@ -10,7 +10,11 @@ jest.mock("framer-motion", () => {
     return <div {...(rest as React.HTMLAttributes<HTMLDivElement>)}>{children}</div>;
   };
   return {
-    motion: { div: proxy, span: proxy },
+    motion: { div: proxy, span: proxy, img: ({ children, ...props }: React.PropsWithChildren<Record<string, unknown>>) => {
+      const { initial, animate, exit, transition, ...rest } = props as Record<string, unknown>;
+      void initial; void animate; void exit; void transition;
+      return <img {...(rest as React.ImgHTMLAttributes<HTMLImageElement>)} />;
+    }},
     AnimatePresence: ({ children }: React.PropsWithChildren) => <>{children}</>,
   };
 });
@@ -35,8 +39,8 @@ describe("Home page - Upload state", () => {
   });
 
   test("renders upload zone with paste textarea", () => {
-    expect(screen.getByText("Drop your bill here or paste below")).toBeInTheDocument();
-    expect(screen.getByPlaceholderText("Paste your itemized bill text here...")).toBeInTheDocument();
+    expect(screen.getByText("Drop your bill here")).toBeInTheDocument();
+    expect(screen.getByPlaceholderText("Or paste your itemized bill text here...")).toBeInTheDocument();
   });
 
   test("renders all three demo pills", () => {
@@ -51,7 +55,7 @@ describe("Home page - Upload state", () => {
   });
 
   test("shows Analyze Bill button when text is pasted", () => {
-    const textarea = screen.getByPlaceholderText("Paste your itemized bill text here...");
+    const textarea = screen.getByPlaceholderText("Or paste your itemized bill text here...");
     fireEvent.change(textarea, { target: { value: "Some bill text" } });
     expect(screen.getByText("Analyze Bill")).toBeInTheDocument();
   });

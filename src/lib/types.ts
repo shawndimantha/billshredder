@@ -176,6 +176,53 @@ export type CoachingCard = {
 };
 
 // ============================================================================
+// Vision extraction result
+// ============================================================================
+
+export type ExtractionResult = {
+  hospital_name: string;
+  date_of_service: string;
+  account_number: string;
+  patient_name: string;
+  bill_type: BillType;
+  state: string;
+  insurance_status: InsuranceStatus;
+  total_charges: number;
+  line_items: Array<{
+    description: string;
+    cpt_code: string | null;
+    revenue_code: string | null;
+    quantity: number;
+    unit_charge: number;
+    total_charge: number;
+  }>;
+  raw_text: string;
+  confidence: "high" | "medium" | "low";
+};
+
+// ============================================================================
+// Negotiation types
+// ============================================================================
+
+export type NegotiationEvent =
+  | { type: "system"; content: string }
+  | { type: "rep_message"; content: string; amount?: number }
+  | { type: "negotiator_message"; content: string; amount?: number }
+  | { type: "negotiation_complete"; final_amount: number }
+  | { type: "error"; message: string };
+
+export type NegotiationContext = {
+  originalBill: number;
+  fairValue: number;
+  hospitalName: string;
+  errors: Array<{ title: string; estimated_overcharge: number; evidence: string }>;
+  benchmarks: Array<{ description: string; billed_amount: number; medicare_rate: number; fair_rate: number; markup_ratio: number }>;
+  protections: Array<{ name: string; description: string; action: string }>;
+  strategy: Array<{ action: string; talking_points: string[]; expected_savings: number | null }>;
+  charityCareEligible: boolean;
+};
+
+// ============================================================================
 // The universal event stream — both real and demo mode emit these
 // ============================================================================
 

@@ -12,11 +12,12 @@ interface ResultsCelebrationProps {
   state: AuditState;
   expandedSections: StageName[];
   onToggleSection: (section: StageName) => void;
+  negotiatedAmount?: number;
 }
 
-export default function ResultsCelebration({ state, expandedSections, onToggleSection }: ResultsCelebrationProps) {
+export default function ResultsCelebration({ state, expandedSections, onToggleSection, negotiatedAmount }: ResultsCelebrationProps) {
   const originalBill = state.summary?.original_bill || state.bill?.total_charges || 47283;
-  const finalAmount = 4100;
+  const finalAmount = negotiatedAmount || 4100;
   const totalSaved = originalBill - finalAmount;
   const savingsPercent = Math.round((totalSaved / originalBill) * 100);
 
