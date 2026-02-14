@@ -93,7 +93,6 @@ export default function JourneyController({
         {transition === "call1-to-audit" && (
           <PhaseTransition
             key="t1"
-            emoji="\u{1F4E7}"
             message="Itemized bill received. Analyzing..."
             duration={2500}
             speed={speed}
@@ -104,7 +103,6 @@ export default function JourneyController({
         {transition === "audit-to-call2" && (
           <PhaseTransition
             key="t2"
-            emoji="\u2694\uFE0F"
             message="Strategy ready. Time to call."
             duration={2500}
             speed={speed}
@@ -115,7 +113,6 @@ export default function JourneyController({
         {transition === "call2-to-results" && (
           <PhaseTransition
             key="t3"
-            emoji="\u{1F389}"
             message="Negotiation complete!"
             duration={2000}
             speed={speed}

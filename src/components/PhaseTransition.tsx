@@ -5,13 +5,12 @@ import { motion } from "framer-motion";
 
 interface PhaseTransitionProps {
   message: string;
-  emoji?: string;
   duration?: number;
   onComplete: () => void;
   speed?: number;
 }
 
-export default function PhaseTransition({ message, emoji, duration = 2000, onComplete, speed = 1 }: PhaseTransitionProps) {
+export default function PhaseTransition({ message, duration = 2000, onComplete, speed = 1 }: PhaseTransitionProps) {
   useEffect(() => {
     const timer = setTimeout(onComplete, duration / speed);
     return () => clearTimeout(timer);
@@ -26,7 +25,6 @@ export default function PhaseTransition({ message, emoji, duration = 2000, onCom
       className="flex-1 flex items-center justify-center"
     >
       <div className="text-center px-6">
-        {emoji && <p className="text-4xl mb-4">{emoji}</p>}
         <p className="text-lg font-semibold" style={{ fontFamily: "'Space Grotesk', sans-serif", color: "#EDEDF0" }}>
           {message}
         </p>

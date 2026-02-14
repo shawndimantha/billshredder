@@ -21,7 +21,7 @@ export const GET_ITEMIZED_BILL_SCRIPT: CallScript = {
     {
       id: "sys-2",
       type: "system",
-      content: "\u{1F3B5} On hold... (estimated wait: 4 minutes)",
+      content: "On hold... (estimated wait: 4 minutes)",
       delay_ms: 1200,
       coaching: {
         type: "explain",
@@ -136,7 +136,7 @@ export const GET_ITEMIZED_BILL_SCRIPT: CallScript = {
     {
       id: "sys-5",
       type: "system",
-      content: "\u{1F4E7} Itemized bill received \u2014 loading into BillShredder...",
+      content: "Itemized bill received \u2014 loading into BillShredder...",
       delay_ms: 1500,
       coaching: {
         type: "success",

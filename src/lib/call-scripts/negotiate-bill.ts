@@ -22,7 +22,7 @@ export const NEGOTIATE_BILL_SCRIPT: CallScript = {
     {
       id: "sys-n2",
       type: "system",
-      content: "\u{1F3B5} On hold... (estimated wait: 3 minutes)",
+      content: "On hold... (estimated wait: 3 minutes)",
       delay_ms: 1000,
       coaching: {
         type: "explain",
@@ -210,7 +210,7 @@ export const NEGOTIATE_BILL_SCRIPT: CallScript = {
     {
       id: "sys-n4",
       type: "system",
-      content: "\u{1F3B5} On hold \u2014 transferring to financial counseling... (1 min 45 sec)",
+      content: "On hold \u2014 transferring to financial counseling... (1 min 45 sec)",
       delay_ms: 1200,
       coaching: {
         type: "prep",
@@ -327,7 +327,7 @@ export const NEGOTIATE_BILL_SCRIPT: CallScript = {
     {
       id: "sys-n6",
       type: "system",
-      content: "\u{2705} Negotiation complete \u2014 $47,283 reduced to $4,100 (91% savings)",
+      content: "Negotiation complete \u2014 $47,283 reduced to $4,100 (91% savings)",
       delay_ms: 1000,
       coaching: {
         type: "success",
