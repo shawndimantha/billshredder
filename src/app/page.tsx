@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Upload, Play, Zap } from "lucide-react";
 import { demoLabels } from "@/lib/demo-data";
@@ -8,11 +8,7 @@ import { DEMO_BILLS } from "@/lib/demo-bills";
 import { DemoType } from "@/lib/types";
 import { useAuditStream } from "@/hooks/useAuditStream";
 import StickyHeader from "@/components/StickyHeader";
-import ProgressStepper from "@/components/ProgressStepper";
-import SavingsHero from "@/components/SavingsHero";
-import DocumentCards from "@/components/DocumentCards";
-import FindingsDashboard from "@/components/FindingsDashboard";
-import ProductTeaser from "@/components/ProductTeaser";
+import JourneyController from "@/components/JourneyController";
 
 const demoDescriptions: Record<DemoType, string> = {
   er: "Broken arm with duplicate CT scans & upcoding",
@@ -25,9 +21,12 @@ export default function Home() {
   const [pastedText, setPastedText] = useState("");
   const [dragOver, setDragOver] = useState(false);
   const [demoMode, setDemoMode] = useState(false);
-  const [speed, setSpeed] = useState(1);
+  const [speed, setSpeed] = useState(1.5);
+  const [isWorking, setIsWorking] = useState(false);
+  const [isRealBill, setIsRealBill] = useState(false);
+  const [pendingDemo, setPendingDemo] = useState<DemoType | null>(null);
 
-  const appState = state.status === "idle" ? "upload" : state.status === "complete" || state.status === "error" ? "complete" : "working";
+  const appState = !isWorking ? "upload" : "working";
 
   // Check URL params for ?demo=er on mount
   useEffect(() => {
@@ -35,7 +34,19 @@ export default function Home() {
     const demoId = params.get("demo") as DemoType | null;
     if (demoId && DEMO_BILLS[demoId]) {
       setDemoMode(true);
-      const demo = DEMO_BILLS[demoId];
+      setIsWorking(true);
+      setIsRealBill(false);
+      setPendingDemo(demoId);
+      const paramSpeed = Number(params.get("speed")) || 1.5;
+      setSpeed(paramSpeed);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Called by JourneyController when call1 completes and audit should start
+  const handleStartAudit = useCallback(() => {
+    if (pendingDemo) {
+      const demo = DEMO_BILLS[pendingDemo];
       startAudit({
         bill_text: demo.bill_text,
         bill_type: demo.bill_type,
@@ -45,32 +56,40 @@ export default function Home() {
         household_income: demo.household_income,
         household_size: demo.household_size,
         demo_mode: true,
-        demo_id: demoId,
-        speed: Number(params.get("speed")) || 1,
+        demo_id: pendingDemo,
+        speed,
       });
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [pendingDemo, speed, startAudit]);
 
   const handleDemo = (type: DemoType) => {
-    const demo = DEMO_BILLS[type];
-    startAudit({
-      bill_text: demo.bill_text,
-      bill_type: demo.bill_type,
-      state: demo.state,
-      hospital_name: demo.hospital_name,
-      insurance_status: demo.insurance_status,
-      household_income: demo.household_income,
-      household_size: demo.household_size,
-      demo_mode: demoMode,
-      demo_id: demoMode ? type : undefined,
-      speed: demoMode ? speed : undefined,
-    });
+    setIsWorking(true);
+    setIsRealBill(false);
+    setPendingDemo(type);
+
+    if (!demoMode) {
+      // Live mode: skip call1, go straight to audit
+      const demo = DEMO_BILLS[type];
+      startAudit({
+        bill_text: demo.bill_text,
+        bill_type: demo.bill_type,
+        state: demo.state,
+        hospital_name: demo.hospital_name,
+        insurance_status: demo.insurance_status,
+        household_income: demo.household_income,
+        household_size: demo.household_size,
+        demo_mode: false,
+        speed: undefined,
+      });
+    }
   };
 
   const handleReset = () => {
     reset();
     setPastedText("");
+    setIsWorking(false);
+    setIsRealBill(false);
+    setPendingDemo(null);
   };
 
   const handleDrop = (e: React.DragEvent) => {
@@ -78,6 +97,8 @@ export default function Home() {
     setDragOver(false);
     const text = e.dataTransfer.getData("text");
     if (text) {
+      setIsWorking(true);
+      setIsRealBill(true);
       startAudit({
         bill_text: text, bill_type: "er", state: "California",
         hospital_name: "Unknown Hospital", insurance_status: "uninsured",
@@ -87,6 +108,8 @@ export default function Home() {
 
   const handlePaste = () => {
     if (pastedText.trim()) {
+      setIsWorking(true);
+      setIsRealBill(true);
       startAudit({
         bill_text: pastedText, bill_type: "er", state: "California",
         hospital_name: "Unknown Hospital", insurance_status: "uninsured",
@@ -94,8 +117,11 @@ export default function Home() {
     }
   };
 
+  // Determine journey phase for the header
+  const journeyPhase = !isWorking ? "upload" as const : "audit" as const;
+
   return (
-    <main className="min-h-screen" style={{ background: "#0C0C0F" }}>
+    <main className="min-h-screen flex flex-col" style={{ background: "#0C0C0F" }}>
       <AnimatePresence mode="wait">
         {appState === "upload" && (
           <motion.div
@@ -111,14 +137,14 @@ export default function Home() {
             </p>
 
             <h1 className="text-4xl md:text-6xl font-bold text-center leading-tight mb-4" style={{ fontFamily: "'Space Grotesk', sans-serif", color: "#EDEDF0" }}>
-              Your hospital bill is wrong.
+              Your bill is wrong.
               <br />
-              <span className="gold-shimmer">Let&apos;s prove it.</span>
+              <span className="gold-shimmer">Let&apos;s shred it.</span>
             </h1>
 
             <p className="text-center max-w-lg text-lg mb-10 leading-relaxed" style={{ color: "#8B8B9A" }}>
               Upload your bill. Our AI agent will audit every charge,
-              find every error, know every law, and build your case.
+              find every error, know every law, and coach you through the call.
             </p>
 
             {/* Upload zone */}
@@ -228,7 +254,7 @@ export default function Home() {
           </motion.div>
         )}
 
-        {(appState === "working" || appState === "complete") && (
+        {appState === "working" && (
           <motion.div
             key="working"
             initial={{ opacity: 0, y: 20 }}
@@ -237,41 +263,22 @@ export default function Home() {
             className="min-h-screen flex flex-col"
           >
             <StickyHeader
-              status={state.status}
+              journeyPhase={journeyPhase}
               stageTitle={state.stageTitle}
               demoMode={demoMode}
               onReset={handleReset}
               onToggleDemo={() => setDemoMode(!demoMode)}
             />
 
-            <ProgressStepper
-              currentStage={state.currentStage}
-              isComplete={state.status === "complete"}
+            <JourneyController
+              auditState={state}
+              expandedSections={state.expandedSections}
+              onToggleSection={toggleSection}
+              demoMode={demoMode}
+              speed={speed}
+              isRealBill={isRealBill}
+              onStartAudit={handleStartAudit}
             />
-
-            {/* Single-column content */}
-            <div className="flex-1 max-w-3xl mx-auto w-full px-4 md:px-6 py-6 space-y-6">
-              {state.savingsVisible && state.benchmarkSummary && (
-                <SavingsHero
-                  originalBill={state.benchmarkSummary.total_billed}
-                  fairValue={state.benchmarkSummary.total_fair_value}
-                  bestCase={state.bestCase}
-                  realistic={state.realistic}
-                />
-              )}
-
-              {state.documentsReady && (
-                <DocumentCards letters={state.letters} />
-              )}
-
-              <FindingsDashboard
-                state={state}
-                expandedSections={state.expandedSections}
-                onToggleSection={toggleSection}
-              />
-
-              {state.status === "complete" && <ProductTeaser />}
-            </div>
           </motion.div>
         )}
       </AnimatePresence>

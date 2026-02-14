@@ -1,17 +1,18 @@
 # BillShredder
 
-AI-powered medical bill auditor that finds billing errors, benchmarks prices, identifies legal protections, and generates dispute letters.
+Your bill is wrong. Let's shred it.
 
-80% of hospital bills contain errors. BillShredder uses Claude to audit every charge and build your case.
+AI-powered medical bill auditor that finds billing errors, benchmarks prices, identifies legal protections, and coaches you through every phone call.
 
-## How It Works
+## The Full Journey
 
-1. **Parse** — Extracts line items, CPT codes, and charges from your bill
-2. **Audit** — Finds duplicate charges, upcoding, unbundling, phantom charges
-3. **Benchmark** — Compares prices against Medicare rates and fair market value
-4. **Legal Rights** — Identifies applicable protections (No Surprises Act, 501(r) charity care, state laws, FDCPA)
-5. **Strategy** — Builds a step-by-step negotiation playbook with talking points
-6. **Documents** — Generates ready-to-send dispute and negotiation letters
+BillShredder doesn't just analyze your bill — it coaches you through the entire process:
+
+1. **Get Your Itemized Bill** — Simulated call coaching: how to request the UB-04 form, invoke HIPAA, and get it in writing
+2. **Analyze & Build Your Case** — 6-stage AI audit (parse, errors, benchmarks, legal rights, strategy, letters)
+3. **Negotiate Your Bill Down** — Simulated negotiation coaching: dispute errors, cite Medicare rates, invoke charity care
+
+Demo result: $47,283 ER bill reduced to $4,100 (91% savings).
 
 ## Tech Stack
 
@@ -49,31 +50,40 @@ Try it without an API key using built-in demo scenarios:
 - **Childbirth** ($32K) — Out-of-network balance billing
 - **Collections** ($8.5K) — Urgent care debt with FDCPA violations
 
-Or use URL params: `?demo=er`, `?demo=baby`, `?demo=collections`
+URL params: `?demo=er`, `?demo=baby`, `?demo=collections`
+
+In demo mode, the full journey plays automatically: Call 1 (get itemized bill) -> Audit (6 stages) -> Call 2 (negotiate). Default speed is 1.5x. Override with `?speed=2`.
 
 ## Architecture
 
 ```
 src/
 ├── app/
-│   ├── api/audit/route.ts    # 6-stage SSE streaming pipeline
-│   ├── page.tsx               # Single-column dashboard layout
-│   └── globals.css            # Dark theme, animations
+│   ├── api/audit/route.ts        # 6-stage SSE streaming pipeline
+│   ├── page.tsx                   # Main page with journey orchestration
+│   └── globals.css                # Dark theme, animations
 ├── components/
-│   ├── StickyHeader.tsx       # Logo, status, demo toggle
-│   ├── ProgressStepper.tsx    # 6-step visual progress
-│   ├── SavingsHero.tsx        # Bill vs fair value comparison
-│   ├── DocumentCards.tsx      # Generated letter cards
-│   ├── FindingsDashboard.tsx  # Collapsible findings sections
-│   ├── CollapsibleSection.tsx # Reusable collapse/expand
-│   ├── AnimatedNumber.tsx     # Count-up animation
-│   └── ...                    # ErrorsSection, BenchmarkSection, etc.
+│   ├── JourneyController.tsx      # 5-phase journey state machine
+│   ├── JourneyPhaseIndicator.tsx  # Top-level 3-phase progress bar
+│   ├── CallCoach.tsx              # Split-screen call simulation
+│   ├── CallTranscript.tsx         # Left: phone call transcript
+│   ├── CoachingSidebar.tsx        # Right: real-time coaching cards
+│   ├── CoachingCard.tsx           # Individual coaching card
+│   ├── PhaseTransition.tsx        # Interstitial animations
+│   ├── ResultsCelebration.tsx     # Final results with savings
+│   ├── StickyHeader.tsx           # Logo, status, demo toggle
+│   ├── ProgressStepper.tsx        # 6-step audit sub-stepper
+│   ├── SavingsHero.tsx            # Bill vs fair value comparison
+│   ├── DocumentCards.tsx          # Generated letter cards
+│   ├── FindingsDashboard.tsx      # Collapsible findings sections
+│   └── ...                        # ErrorsSection, BenchmarkSection, etc.
 ├── hooks/
-│   └── useAuditStream.ts     # SSE consumer with reducer state
+│   └── useAuditStream.ts         # SSE consumer with reducer state
 └── lib/
-    ├── agent/                 # System prompts and tool definitions
-    ├── types.ts               # Shared TypeScript types
-    └── demo-scripts/          # Pre-scripted demo event streams
+    ├── agent/                     # System prompts and tool definitions
+    ├── call-scripts/              # Call 1 & Call 2 simulation scripts
+    ├── types.ts                   # Shared TypeScript types
+    └── demo-scripts/              # Pre-scripted audit event streams
 ```
 
 ## Testing

@@ -1,23 +1,31 @@
 "use client";
 
 import { ArrowLeft, Zap } from "lucide-react";
+import type { JourneyPhase } from "@/lib/types";
 
 interface StickyHeaderProps {
-  status: "idle" | "streaming" | "complete" | "error";
+  journeyPhase: JourneyPhase;
   stageTitle: string;
   demoMode: boolean;
   onReset: () => void;
   onToggleDemo: () => void;
 }
 
-export default function StickyHeader({ status, stageTitle, demoMode, onReset, onToggleDemo }: StickyHeaderProps) {
-  const statusText = status === "streaming"
-    ? stageTitle || "Auditing..."
-    : status === "complete"
-      ? "Audit Complete"
-      : status === "error"
-        ? "Error"
-        : "";
+const phaseText: Record<JourneyPhase, string> = {
+  upload: "",
+  call1: "Getting Itemized Bill",
+  audit: "Analyzing Bill",
+  call2: "Negotiating",
+  results: "Complete",
+};
+
+export default function StickyHeader({ journeyPhase, stageTitle, demoMode, onReset, onToggleDemo }: StickyHeaderProps) {
+  const statusText = journeyPhase === "audit"
+    ? stageTitle || phaseText.audit
+    : phaseText[journeyPhase] || "";
+
+  const isActive = journeyPhase === "call1" || journeyPhase === "audit" || journeyPhase === "call2";
+  const isComplete = journeyPhase === "results";
 
   return (
     <header className="sticky top-0 z-50 h-14 flex items-center px-4 md:px-6" style={{ background: "#0C0C0F", borderBottom: "1px solid #2A2A32" }}>
@@ -31,10 +39,10 @@ export default function StickyHeader({ status, stageTitle, demoMode, onReset, on
       </div>
 
       <div className="flex-1 flex items-center justify-center gap-2">
-        {status === "streaming" && (
+        {isActive && (
           <span className="pulse-dot inline-block w-2 h-2 rounded-full" style={{ background: "#D4A574" }} />
         )}
-        {status === "complete" && (
+        {isComplete && (
           <span className="inline-block w-2 h-2 rounded-full" style={{ background: "#22C55E" }} />
         )}
         <span className="text-sm" style={{ color: "#EDEDF0" }}>{statusText}</span>
@@ -54,10 +62,10 @@ export default function StickyHeader({ status, stageTitle, demoMode, onReset, on
       </button>
 
       {/* Mobile status bar */}
-      {status === "streaming" && (
+      {isActive && (
         <div className="absolute left-0 right-0 top-14 h-8 flex items-center justify-center gap-2 md:hidden" style={{ background: "#16161A", borderBottom: "1px solid #2A2A32" }}>
           <span className="pulse-dot inline-block w-1.5 h-1.5 rounded-full" style={{ background: "#D4A574" }} />
-          <span className="text-xs" style={{ color: "#8B8B9A" }}>{stageTitle}</span>
+          <span className="text-xs" style={{ color: "#8B8B9A" }}>{statusText}</span>
         </div>
       )}
     </header>

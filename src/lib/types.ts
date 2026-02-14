@@ -142,6 +142,40 @@ export type AuditSummary = {
 };
 
 // ============================================================================
+// Call coaching types
+// ============================================================================
+
+export type JourneyPhase = "upload" | "call1" | "audit" | "call2" | "results";
+
+export type CallScript = {
+  id: string;
+  title: string;
+  hospital: string;
+  department: string;
+  estimated_real_duration: string;
+  messages: CallMessage[];
+};
+
+export type CallMessage = {
+  id: string;
+  type: "rep" | "you" | "system";
+  content: string;
+  delay_ms: number;
+  coaching?: CoachingCard;
+  bill_impact?: {
+    label: string;
+    amount?: number;
+  };
+};
+
+export type CoachingCard = {
+  type: "prep" | "suggest" | "explain" | "alert" | "success";
+  title: string;
+  content: string;
+  copy_text?: string;
+};
+
+// ============================================================================
 // The universal event stream — both real and demo mode emit these
 // ============================================================================
 

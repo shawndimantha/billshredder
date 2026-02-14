@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "BillShredder — AI Medical Bill Auditor",
-  description: "Upload your hospital bill. Our AI agent audits every charge, finds every error, and builds your case.",
+  title: "BillShredder — Your bill is wrong. Let's shred it.",
+  description: "AI-powered medical bill auditor. Finds billing errors, benchmarks prices, identifies legal protections, coaches you through the negotiation call.",
 };
 
 export default function RootLayout({

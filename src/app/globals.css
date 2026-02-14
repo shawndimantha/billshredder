@@ -93,6 +93,20 @@ body {
   background: #2A2A32;
 }
 
+/* Call coaching styles */
+.call-timer {
+  font-variant-numeric: tabular-nums;
+}
+
+@keyframes typing-dots {
+  0%, 60%, 100% { opacity: 0.3; }
+  30% { opacity: 1; }
+}
+
+.typing-dot:nth-child(1) { animation: typing-dots 1.2s 0s infinite; }
+.typing-dot:nth-child(2) { animation: typing-dots 1.2s 0.2s infinite; }
+.typing-dot:nth-child(3) { animation: typing-dots 1.2s 0.4s infinite; }
+
 /* Responsive breakpoints */
 @media (max-width: 768px) {
   .stepper-labels {

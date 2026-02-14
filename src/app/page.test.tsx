@@ -27,11 +27,11 @@ describe("Home page - Upload state", () => {
   });
 
   test("renders hero headline", () => {
-    expect(screen.getByText("Your hospital bill is wrong.")).toBeInTheDocument();
+    expect(screen.getByText("Your bill is wrong.")).toBeInTheDocument();
   });
 
   test("renders gold tagline", () => {
-    expect(screen.getByText("Let's prove it.")).toBeInTheDocument();
+    expect(screen.getByText("Let's shred it.")).toBeInTheDocument();
   });
 
   test("renders upload zone with paste textarea", () => {
@@ -62,7 +62,7 @@ describe("Home page - Upload state", () => {
 });
 
 describe("Home page - Demo button sends correct API request", () => {
-  test("clicking demo button calls fetch with bill_text", () => {
+  test("clicking demo button in live mode calls fetch with bill_text", () => {
     const mockFetch = jest.fn().mockResolvedValue({
       body: {
         getReader: () => ({
@@ -73,6 +73,7 @@ describe("Home page - Demo button sends correct API request", () => {
     global.fetch = mockFetch;
 
     render(<Home />);
+    // In default (live) mode, clicking demo goes straight to audit
     fireEvent.click(screen.getByText("$47K ER Visit"));
 
     expect(mockFetch).toHaveBeenCalledWith("/api/audit", expect.objectContaining({
