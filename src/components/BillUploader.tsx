@@ -9,6 +9,8 @@ interface BillUploaderProps {
   onPastedText: (text: string) => void;
   pastedText: string;
   onPastedTextChange: (text: string) => void;
+  apiKey?: string | null;
+  onNeedKey?: () => void;
 }
 
 export default function BillUploader({
@@ -16,6 +18,8 @@ export default function BillUploader({
   onPastedText,
   pastedText,
   onPastedTextChange,
+  apiKey,
+  onNeedKey,
 }: BillUploaderProps) {
   const [dragOver, setDragOver] = useState(false);
   const [isExtracting, setIsExtracting] = useState(false);
@@ -24,6 +28,12 @@ export default function BillUploader({
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFile = useCallback(async (file: File) => {
+    const key = apiKey || sessionStorage.getItem("anthropic_api_key");
+    if (!key) {
+      onNeedKey?.();
+      return;
+    }
+
     setError(null);
 
     // Show preview for images
@@ -38,7 +48,11 @@ export default function BillUploader({
       const formData = new FormData();
       formData.append("file", file);
 
-      const res = await fetch("/api/extract-bill", { method: "POST", body: formData });
+      const res = await fetch("/api/extract-bill", {
+        method: "POST",
+        body: formData,
+        headers: key ? { "x-api-key": key } : {},
+      });
 
       if (!res.ok) {
         const err = await res.json();
@@ -53,7 +67,7 @@ export default function BillUploader({
     } finally {
       setIsExtracting(false);
     }
-  }, [onExtracted]);
+  }, [onExtracted, apiKey, onNeedKey]);
 
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();

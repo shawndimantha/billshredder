@@ -69,8 +69,11 @@ export async function POST(request: NextRequest) {
     return streamDemoEvents(body.demo_id, body.speed || 1);
   }
 
-  // Real mode — check API key
-  if (!process.env.ANTHROPIC_API_KEY) {
+  // Real mode — use client key or env key
+  const clientKey = request.headers.get("x-api-key");
+  const apiKey = clientKey || process.env.ANTHROPIC_API_KEY;
+
+  if (!apiKey) {
     // Auto-fallback to demo mode if no API key
     const fallbackDemo = body.demo_id || "er";
     return streamDemoEvents(fallbackDemo, body.speed || 1);
@@ -80,7 +83,7 @@ export async function POST(request: NextRequest) {
     return new Response("Missing bill_text", { status: 400 });
   }
 
-  const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+  const anthropic = new Anthropic({ apiKey });
   const encoder = new TextEncoder();
 
   const stream = new ReadableStream({

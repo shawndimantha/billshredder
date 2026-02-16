@@ -25,6 +25,7 @@ interface LiveNegotiationProps {
   speed: number;
   demoMode: boolean;
   skipLabel?: string;
+  apiKey?: string | null;
 }
 
 export default function LiveNegotiation({
@@ -42,6 +43,7 @@ export default function LiveNegotiation({
   speed,
   demoMode,
   skipLabel = "Skip to Results",
+  apiKey,
 }: LiveNegotiationProps) {
   const [messages, setMessages] = useState<CallMessage[]>([]);
   const [coachingCards, setCoachingCards] = useState<CoachingCardType[]>([]);
@@ -59,7 +61,10 @@ export default function LiveNegotiation({
     try {
       const res = await fetch("/api/negotiate", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          ...(apiKey ? { "x-api-key": apiKey } : {}),
+        },
         body: JSON.stringify({
           originalBill,
           fairValue,
@@ -132,7 +137,7 @@ export default function LiveNegotiation({
       if (err instanceof DOMException && err.name === "AbortError") return;
       console.error("Negotiation stream error:", err);
     }
-  }, [originalBill, fairValue, hospitalName, errors, benchmarks, protections, strategy, charityCareEligible, demoMode, speed, onComplete]);
+  }, [originalBill, fairValue, hospitalName, errors, benchmarks, protections, strategy, charityCareEligible, demoMode, speed, onComplete, apiKey]);
 
   // Timer
   useEffect(() => {

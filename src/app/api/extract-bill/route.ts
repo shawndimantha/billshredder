@@ -52,8 +52,11 @@ Be thorough — extract EVERY line item. If a field isn't visible, use your best
 Return ONLY valid JSON, no markdown fences.`;
 
 export async function POST(request: NextRequest) {
-  if (!process.env.ANTHROPIC_API_KEY) {
-    return NextResponse.json({ error: "No API key configured" }, { status: 500 });
+  const clientKey = request.headers.get("x-api-key");
+  const apiKey = clientKey || process.env.ANTHROPIC_API_KEY;
+
+  if (!apiKey) {
+    return NextResponse.json({ error: "No API key provided. Please enter your Anthropic API key." }, { status: 401 });
   }
 
   const formData = await request.formData();
@@ -75,7 +78,7 @@ export async function POST(request: NextRequest) {
     mediaType = "image/jpeg"; // fallback; real implementation would convert PDF pages
   }
 
-  const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+  const anthropic = new Anthropic({ apiKey });
 
   try {
     const response = await anthropic.messages.create({

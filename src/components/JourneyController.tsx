@@ -29,6 +29,8 @@ interface JourneyControllerProps {
   onStartAudit: () => void;
   /** enable live AI vs AI negotiation instead of scripted */
   liveNegotiation?: boolean;
+  /** user-provided Anthropic API key */
+  apiKey?: string | null;
 }
 
 type TransitionState = "none" | "call1-to-audit" | "audit-to-call2" | "call2-to-results";
@@ -42,6 +44,7 @@ export default function JourneyController({
   isRealBill,
   onStartAudit,
   liveNegotiation = false,
+  apiKey,
 }: JourneyControllerProps) {
   // For real bills, skip call1 and go straight to audit
   const initialPhase: JourneyPhase = isRealBill ? "audit" : "call1";
@@ -233,6 +236,7 @@ export default function JourneyController({
                   speed={speed}
                   demoMode={demoMode}
                   skipLabel="Skip to Results"
+                  apiKey={apiKey}
                 />
               ) : (
                 <CallCoach

@@ -11,6 +11,7 @@ import StickyHeader from "@/components/StickyHeader";
 import JourneyController from "@/components/JourneyController";
 import BillUploader from "@/components/BillUploader";
 import ExtractionVerification from "@/components/ExtractionVerification";
+import ApiKeyGate from "@/components/ApiKeyGate";
 
 const demoDescriptions: Record<DemoType, string> = {
   er: "Broken arm with duplicate CT scans & upcoding",
@@ -31,6 +32,40 @@ export default function Home() {
   const [pendingDemo, setPendingDemo] = useState<DemoType | null>(null);
   const [extraction, setExtraction] = useState<Record<string, unknown> | null>(null);
   const [extractedText, setExtractedText] = useState("");
+  const [apiKey, setApiKey] = useState<string | null>(null);
+  const [showKeyGate, setShowKeyGate] = useState(false);
+  const [pendingAction, setPendingAction] = useState<(() => void) | null>(null);
+
+  // Restore key from sessionStorage on mount
+  useEffect(() => {
+    const stored = sessionStorage.getItem("anthropic_api_key");
+    if (stored) setApiKey(stored);
+  }, []);
+
+  const requireKey = (action: () => void) => {
+    if (apiKey) {
+      action();
+    } else {
+      setPendingAction(() => action);
+      setShowKeyGate(true);
+    }
+  };
+
+  const handleKeySubmit = (key: string) => {
+    setApiKey(key);
+    setShowKeyGate(false);
+    if (pendingAction) {
+      pendingAction();
+      setPendingAction(null);
+    }
+  };
+
+  const handleKeyGateDemo = () => {
+    setShowKeyGate(false);
+    setPendingAction(null);
+    setDemoMode(true);
+    // Re-trigger the action as demo
+  };
 
   // Check URL params for ?demo=er on mount
   useEffect(() => {
@@ -67,22 +102,29 @@ export default function Home() {
   }, [pendingDemo, speed, startAudit]);
 
   const handleDemo = (type: DemoType) => {
-    setUploadStep("working");
-    setIsRealBill(false);
-    setPendingDemo(type);
-
-    if (!demoMode) {
-      const demo = DEMO_BILLS[type];
-      startAudit({
-        bill_text: demo.bill_text,
-        bill_type: demo.bill_type,
-        state: demo.state,
-        hospital_name: demo.hospital_name,
-        insurance_status: demo.insurance_status,
-        household_income: demo.household_income,
-        household_size: demo.household_size,
-        demo_mode: false,
-        speed: undefined,
+    if (demoMode) {
+      // Demo mode doesn't need a key
+      setUploadStep("working");
+      setIsRealBill(false);
+      setPendingDemo(type);
+    } else {
+      // Live mode needs a key
+      requireKey(() => {
+        setUploadStep("working");
+        setIsRealBill(false);
+        setPendingDemo(type);
+        const demo = DEMO_BILLS[type];
+        startAudit({
+          bill_text: demo.bill_text,
+          bill_type: demo.bill_type,
+          state: demo.state,
+          hospital_name: demo.hospital_name,
+          insurance_status: demo.insurance_status,
+          household_income: demo.household_income,
+          household_size: demo.household_size,
+          demo_mode: false,
+          speed: undefined,
+        });
       });
     }
   };
@@ -123,11 +165,13 @@ export default function Home() {
   };
 
   const handlePastedText = (text: string) => {
-    setUploadStep("working");
-    setIsRealBill(true);
-    startAudit({
-      bill_text: text, bill_type: "er", state: "California",
-      hospital_name: "Unknown Hospital", insurance_status: "uninsured",
+    requireKey(() => {
+      setUploadStep("working");
+      setIsRealBill(true);
+      startAudit({
+        bill_text: text, bill_type: "er", state: "California",
+        hospital_name: "Unknown Hospital", insurance_status: "uninsured",
+      });
     });
   };
 
@@ -135,6 +179,12 @@ export default function Home() {
 
   return (
     <main className="min-h-screen flex flex-col" style={{ background: "#0C0C0F" }}>
+      {showKeyGate && (
+        <ApiKeyGate
+          onKeySubmit={handleKeySubmit}
+          onDemo={handleKeyGateDemo}
+        />
+      )}
       <AnimatePresence mode="wait">
         {uploadStep === "upload" && (
           <motion.div
@@ -166,6 +216,8 @@ export default function Home() {
               onPastedText={handlePastedText}
               pastedText={pastedText}
               onPastedTextChange={setPastedText}
+              apiKey={apiKey}
+              onNeedKey={() => setShowKeyGate(true)}
             />
 
             {/* Mode toggles */}
@@ -299,6 +351,7 @@ export default function Home() {
               isRealBill={isRealBill}
               onStartAudit={handleStartAudit}
               liveNegotiation={liveNegotiation}
+              apiKey={apiKey}
             />
           </motion.div>
         )}

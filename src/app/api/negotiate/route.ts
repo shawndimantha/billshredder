@@ -33,12 +33,15 @@ export async function POST(request: NextRequest) {
     return streamDemoNegotiation(body.speed || 1);
   }
 
-  // Real mode
-  if (!process.env.ANTHROPIC_API_KEY) {
+  // Real mode — use client key or env key
+  const clientKey = request.headers.get("x-api-key");
+  const apiKey = clientKey || process.env.ANTHROPIC_API_KEY;
+
+  if (!apiKey) {
     return streamDemoNegotiation(body.speed || 1);
   }
 
-  const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+  const anthropic = new Anthropic({ apiKey });
   const encoder = new TextEncoder();
 
   const negotiatorSystem = buildNegotiatorPrompt({

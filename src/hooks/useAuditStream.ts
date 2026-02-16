@@ -147,16 +147,21 @@ export function useAuditStream() {
   const [state, dispatch] = useReducer(reducer, initialState);
   const abortRef = useRef<AbortController | null>(null);
 
-  const startAudit = useCallback(async (request: AuditRequest) => {
+  const startAudit = useCallback(async (request: AuditRequest, apiKey?: string | null) => {
     abortRef.current?.abort();
     abortRef.current = new AbortController();
 
     dispatch({ type: "start" });
 
+    const key = apiKey || sessionStorage.getItem("anthropic_api_key");
+
     try {
       const res = await fetch("/api/audit", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          ...(key ? { "x-api-key": key } : {}),
+        },
         body: JSON.stringify(request),
         signal: abortRef.current.signal,
       });
